@@ -27,6 +27,58 @@
   let misSolicitudes = [];
   let editandoId = null;
 
+  // Calcula los días de vacaciones que le corresponden a un empleado
+// según su antigüedad y la regla de proporcionalidad.
+function diasPorAntiguedad(aniosCompletos) {
+  const reglas = [
+  { anios: 1, dias: 10 },
+  { anios: 2, dias: 12 },
+  { anios: 3, dias: 15 },
+  { anios: 4, dias: 20 }
+];
+
+// Si tiene 4+ años, siempre son 20
+if (aniosCompletos >= 4) return 20;
+
+const regla = reglas.find(r => r.anios === aniosCompletos); // ✅ CORREGIDO aquí
+return regla ? regla.dias : 0;
+}
+
+// Calcula los días proporcionales si el empleado no ha cumplido el año.
+function diasProporcionales(fechaIngreso, fechaCorte) {
+
+  const aniosCompletos = calcularAniosCompletos(fechaIngreso, fechaCorte);
+  const diasAnio = diasPorAntiguedad(aniosCompletos + 1);
+  const mesesTrabajados = calcularMesesTrabajados(fechaIngreso, fechaCorte);
+  return Math.round((mesesTrabajados / 12) * diasAnio * 100) / 100;
+}
+
+// Calcula cuántos años completos lleva el empleado.
+function calcularAniosCompletos(fechaIngreso, fechaCorte) {
+
+  const ingreso = new Date(fechaIngreso);
+  const corte = new Date(fechaCorte);
+  let anios = corte.getFullYear() - ingreso.getFullYear();
+  if (corte.getMonth() < ingreso.getMonth() ||
+      (corte.getMonth() === ingreso.getMonth() && corte.getDate() < ingreso.getDate())) {
+
+    anios--;
+  }
+  return anios;
+}
+
+// Calcula cuántos meses completos lleva trabajados (para el proporcional.
+function calcularMesesTrabajados(fechaIngreso, fechaCorte) {
+
+  const ingreso = new Date(fechaIngreso);
+  const corte = new Date(fechaCorte);
+  let meses = (corte.getFullYear() - ingreso.getFullYear()) * 12;
+  meses += corte.getMonth() - ingreso.getMonth();
+  if (corte.getDate() < ingreso.getDate()) meses--;
+  return Math.max(meses, 0);
+}
+
+
   // ---------- Utilidades ----------
   function esc(valor) {
     return String(valor == null ? '' : valor)
@@ -134,6 +186,11 @@
     $('tabla-solicitudes').querySelector('tbody').addEventListener('click', alClicMisSolicitudes);
     $('tabla-pendientes').querySelector('tbody').addEventListener('click', alClicPendientes);
 
+    if ($('filtro-estado')) {
+    $('filtro-estado').addEventListener('change', function () { dibujarResumen(); });
+    }
+
+
     db.auth.getSession().then(function (respuesta) {
       if (respuesta.data.session) {
         entrar();
@@ -217,6 +274,8 @@
 
   async function cargarSaldos() {
     const respuesta = await db.from('saldos_vacaciones').select('*').order('codigo');
+    
+    console.log('RESPUESTA SALDOS:', respuesta); //Aqui
     saldos = respuesta.data || [];
     if (esStaff()) dibujarResumen();
   }
@@ -468,30 +527,39 @@
       tarjeta('Saldo disponible', s.saldo_disponible, 'destacada');
   }
 
-  function dibujarResumen() {
-    const cuerpo = $('tabla-resumen').querySelector('tbody');
-    if (!saldos.length) {
-      cuerpo.innerHTML = '<tr><td colspan="8" class="vacio">Sin empleados.</td></tr>';
-      return;
-    }
-    cuerpo.innerHTML = saldos.map(function (s) {
-      return '<tr data-id="' + esc(s.empleado_id) + '">' +
-        '<td>' + esc(s.codigo) + '</td>' +
-        '<td>' + esc(s.nombre) + '</td>' +
-        '<td>' + esc(ESTADOS[s.estado] || s.estado) + '</td>' +
-        '<td class="num">' + esc(num(s.acumuladas)) + '</td>' +
-        '<td class="num">' + esc(num(s.disfrutadas)) + '</td>' +
-        '<td class="num">' + esc(num(s.anticipadas)) + '</td>' +
-        '<td class="num">' + esc(num(s.saldo_pendiente)) + '</td>' +
-        '<td class="num"><strong>' + esc(num(s.saldo_disponible)) + '</strong></td>' +
-        '</tr>';
-    }).join('');
+function dibujarResumen() {
+  const cuerpo = $('tabla-resumen').querySelector('tbody');
+  const filtro = $('filtro-estado') ? $('filtro-estado').value : 'activos';
+  const inactivos = ['renuncio', 'despedido'];
+  const lista = saldos.filter(function (s) {
+    if (filtro === 'todos') return true;
+    const esInactivo = inactivos.includes(s.estado);
+    return filtro === 'inactivos' ? esInactivo : !esInactivo;
+  });
 
-    cuerpo.querySelectorAll('tr[data-id]').forEach(function (fila) {
-      fila.addEventListener('click', function () { mostrarEmpleado(fila.getAttribute('data-id')); });
-    });
-    resaltarFila();
+  if (!lista.length) {
+    cuerpo.innerHTML = '<tr><td colspan="8" class="vacio">Sin empleados.</td></tr>';
+    return;
   }
+  cuerpo.innerHTML = lista.map(function (s) {
+    return '<tr data-id="' + esc(s.empleado_id) + '">' +
+      '<td>' + esc(s.codigo) + '</td>' +
+      '<td>' + esc(s.nombre) + '</td>' +
+      '<td>' + esc(ESTADOS[s.estado] || s.estado) + '</td>' +
+      '<td class="num">' + esc(num(s.acumuladas)) + '</td>' +
+      '<td class="num">' + esc(num(s.disfrutadas)) + '</td>' +
+      '<td class="num">' + esc(num(s.anticipadas)) + '</td>' +
+      '<td class="num">' + esc(num(s.saldo_pendiente)) + '</td>' +
+      '<td class="num"><strong>' + esc(num(s.saldo_disponible)) + '</strong></td>' +
+      '</tr>';
+  }).join('');
+
+  cuerpo.querySelectorAll('tr[data-id]').forEach(function (fila) {
+    fila.addEventListener('click', function () { mostrarEmpleado(fila.getAttribute('data-id')); });
+  });
+  resaltarFila();
+}
+
 
   function resaltarFila() {
     document.querySelectorAll('#tabla-resumen tbody tr').forEach(function (fila) {

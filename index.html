@@ -76,6 +76,13 @@
         <h2>Resumen general</h2>
         <p class="ayuda">Toca una fila para ver el detalle de ese empleado.</p>
         <div class="table-wrap">
+        <div class="filtro-estado">
+        <label for="filtro-estado">Mostrar:</label>
+        <select id="filtro-estado">
+        <option value="activos">Solo activos</option>
+        <option value="inactivos">Solo inactivos</option>
+        <option value="todos">Todos</option>
+        </select>
           <table id="tabla-resumen">
             <thead>
               <tr>
@@ -87,6 +94,7 @@
             </thead>
             <tbody></tbody>
           </table>
+          </div>
         </div>
       </section>
 
