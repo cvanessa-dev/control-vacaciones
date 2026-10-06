@@ -59,55 +59,124 @@
   <div id="app-view" hidden>
     <header class="topbar">
       <div class="barra-titulo">
-    <img src="img/login.png" alt="Logo" class="logo">
-    <strong>Control de vacaciones</strong>
-  </div>
-  <div class="user">
-    <span id="user-nombre"></span>
-    <span id="user-rol" class="badge"></span>
-    <button id="btn-salir" class="btn btn-sec" type="button">Salir</button>
-  </div>
+        <img src="img/login.png" alt="Logo" class="logo">
+        <strong>Control de vacaciones</strong>
+      </div>
+      <div class="user">
+        <span id="user-nombre"></span>
+        <span id="user-rol" class="badge"></span>
+        <button id="btn-salir" class="btn btn-sec" type="button">Salir</button>
+      </div>
     </header>
 
     <main class="container">
 
-      <!-- SOLO RRHH Y ADMINISTRADOR -->
+      <!-- SOLO RRHH Y ADMINISTRADOR: RESUMEN GENERAL -->
       <section id="panel-staff" hidden>
         <h2>Resumen general</h2>
         <p class="ayuda">Toca una fila para ver el detalle de ese empleado.</p>
+        
         <div class="table-wrap">
-        <div class="filtro-estado">
-        <label for="filtro-estado">Mostrar:</label>
-        <select id="filtro-estado">
-        <option value="activos">Solo activos</option>
-        <option value="inactivos">Solo inactivos</option>
-        <option value="todos">Todos</option>
-        </select>
+          <div class="filtros">
+            <div class="filtro-estado">
+              <label for="filtro-estado">Mostrar:</label>
+              <select id="filtro-estado">
+                <option value="activo">Solo activos</option>
+                <option value="suspendido">Suspendidos</option>
+                <option value="renuncio">Renunciados</option>
+                <option value="despedido">Despedidos</option>
+                <option value="todos">Todos</option>
+              </select>
+            </div>
+
+            <div class="filtro-estado">
+              <label for="filtro-departamento">Departamento:</label>
+              <select id="filtro-departamento">
+                <option value="">Todos</option>
+              </select>
+            </div>
+
+            <button id="btn-nuevo-empleado" class="btn-chico btn-prim" type="button">+ Nuevo empleado</button>
+          </div>
+
           <table id="tabla-resumen">
             <thead>
               <tr>
-                <th>Código</th><th>Nombre</th><th>Estado</th>
-                <th class="num">Acumuladas</th><th class="num">Disfrutadas</th>
-                <th class="num">Anticipadas</th><th class="num">Pendiente</th>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Puesto</th>
+                <th>Departamento</th>
+                <th>Ingreso</th>
+                <th>Salida</th>
+                <th>Estado</th>
+                <th class="num">Acumuladas</th>
+                <th class="num">Disfrutadas</th>
+                <th class="num">Anticipadas</th>
+                <th class="num">Pendiente</th>
                 <th class="num">Disponible</th>
               </tr>
             </thead>
             <tbody></tbody>
           </table>
-          </div>
         </div>
       </section>
 
-
+      <!-- SOLO RRHH, GERENTE DE RRHH Y ADMINISTRADOR: REGISTRAR EMPLEADO -->
+      <section id="panel-nuevo-empleado" hidden>
+        <h2>Registrar nuevo empleado</h2>
+        <form id="form-empleado" class="form-sol">
+          <div>
+            <label for="emp-codigo">Código</label>
+            <input id="emp-codigo" type="text" maxlength="20" required>
+          </div>
+          <div class="ancho">
+            <label for="emp-nombre">Nombre completo</label>
+            <input id="emp-nombre" type="text" maxlength="120" required>
+          </div>
+          <div>
+            <label for="emp-puesto">Puesto</label>
+            <input id="emp-puesto" type="text" maxlength="80">
+          </div>
+          <div>
+            <label for="emp-departamento">Departamento</label>
+            <input id="emp-departamento" type="text" maxlength="80">
+          </div>
+          <div>
+            <label for="emp-ingreso">Fecha de ingreso</label>
+            <input id="emp-ingreso" type="date" required>
+          </div>
+          <div>
+            <label for="emp-tipo-pago">Tipo de pago</label>
+            <select id="emp-tipo-pago">
+              <option value="quincenal">Quincenal</option>
+              <option value="mensual">Mensual</option>
+              <option value="semanal">Semanal</option>
+            </select>
+          </div>
+          <div class="acciones-form">
+            <button id="emp-guardar" class="btn-chico btn-prim" type="submit">Registrar</button>
+            <button id="emp-cancelar" class="btn-chico" type="button">Cancelar</button>
+          </div>
+        </form>
+        <p class="ayuda">El empleado queda registrado en la base con estado Activo. Después, el administrador crea su usuario de acceso en Supabase (Authentication) y lo vincula en la tabla perfiles.</p>
+        <p id="emp-msg" class="msg" role="status" hidden></p>
+      </section>
+      
       <!-- SOLO RRHH Y ADMINISTRADOR: SOLICITUDES POR RESOLVER -->
       <section id="panel-pendientes" hidden>
         <h2>Solicitudes por resolver</h2>
+        <p id="ayuda-pendientes" class="ayuda" hidden>⚠️ Como Gerente de Operaciones, solo ves solicitudes de empleados con puesto "Gerente".</p>
         <div class="table-wrap">
           <table id="tabla-pendientes">
             <thead>
               <tr>
-                <th>Empleado</th><th>Del</th><th>Al</th>
-                <th class="num">Días</th><th>Nota</th><th>Acciones</th>
+                <th>Empleado</th>
+                <th>Puesto</th>
+                <th>Del</th>
+                <th>Al</th>
+                <th class="num">Días</th>
+                <th>Nota</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -124,7 +193,7 @@
       </section>
 
       <!-- MIS SOLICITUDES -->
-      <section id="seccion-solicitudes">
+      <section id="seccion-solicitudes" hidden>
         <h2>Mis solicitudes</h2>
         <form id="form-solicitud" class="form-sol">
           <div>
@@ -154,8 +223,13 @@
           <table id="tabla-solicitudes">
             <thead>
               <tr>
-                <th>Del</th><th>Al</th><th class="num">Días</th><th>Estado</th>
-                <th>Nota</th><th>Respuesta</th><th>Acciones</th>
+                <th>Del</th>
+                <th>Al</th>
+                <th class="num">Días</th>
+                <th>Estado</th>
+                <th>Nota</th>
+                <th>Respuesta</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -163,6 +237,7 @@
         </div>
       </section>
 
+      <!-- VACACIONES POR AÑO DE SERVICIO -->
       <section>
         <h2>Vacaciones por año de servicio</h2>
         <p class="ayuda">El saldo oficial es el de las tarjetas de arriba. Esta tabla ayuda a ver de qué año salió cada día.</p>
@@ -170,9 +245,13 @@
           <table id="tabla-periodos">
             <thead>
               <tr>
-                <th>Año</th><th>Del</th><th>Al</th>
-                <th class="num">Corresponden</th><th class="num">Tomados</th>
-                <th class="num">Anticipados</th><th class="num">Quedan</th>
+                <th>Año</th>
+                <th>Del</th>
+                <th>Al</th>
+                <th class="num">Corresponden</th>
+                <th class="num">Tomados</th>
+                <th class="num">Anticipados</th>
+                <th class="num">Quedan</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -180,14 +259,18 @@
         </div>
       </section>
 
+      <!-- HISTORIAL DE MOVIMIENTOS -->
       <section>
         <h2>Historial de movimientos</h2>
         <div class="table-wrap">
           <table id="tabla-movimientos">
             <thead>
               <tr>
-                <th>Fecha</th><th>Tipo</th><th>Año de servicio</th>
-                <th class="num">Días</th><th>Motivo</th>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Año de servicio</th>
+                <th class="num">Días</th>
+                <th>Motivo</th>
               </tr>
             </thead>
             <tbody></tbody>
