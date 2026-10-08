@@ -47,7 +47,7 @@ h2 { font-size: 1.15rem; }
   background: var(--fondo);
 }
 
-/* LOGIN MEJORADO: dos columnas */
+/* LOGIN MEJORADO: */
 .login-panel {
   display: grid; grid-template-columns: 1fr 1fr; width: 100%; max-width: 920px;
   background: #fff; border-radius: 16px; overflow: hidden;
@@ -76,7 +76,8 @@ input[type="date"], input[type="number"], select {
 input:focus { outline: 2px solid var(--azul); outline-offset: 1px; }
 
 .error { margin: .8rem 0 0; color: var(--rojo); font-size: .88rem; }
-.nota { text-align: center; color: var(--gris); font-size: .8rem; margin: 1.2rem 0 0; }
+.nota { text-align: center; color: var(--gris); font-size: .8rem; margin: 3.2rem 0 0; }
+.nota-grupo { margin-top: .1rem; }
 
 /* campos con icono */
 .campo-icono { position: relative; display: flex; align-items: center; }
@@ -235,4 +236,5 @@ td.texto { white-space: normal; min-width: 140px; }
   display: inline-flex;
   align-items: center;
 }
+
 
