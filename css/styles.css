@@ -123,9 +123,8 @@ input:focus { outline: 2px solid var(--azul); outline-offset: 1px; }
 .badge { background: rgba(255, 255, 255, .2); padding: .15rem .6rem; border-radius: 999px; font-size: .8rem; }
 
 /* CONTENIDO */
-.container { max-width: 1050px; margin: 0 auto; padding: 1.2rem; display: grid; gap: 1.6rem; }
-.ayuda { color: var(--gris); font-size: .88rem; margin: 0 0 .7rem; }
-
+.container {
+  max-width: 1400px; margin: 0 auto; padding: 1.2rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.6rem;}
 .cards { display: grid; gap: .8rem; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 .card {
   background: #fff; border: 1px solid var(--borde); border-radius: 12px; padding: 1rem;
@@ -194,4 +193,46 @@ tbody tr:last-child td { border-bottom: 0; }
 td.acciones { white-space: nowrap; }
 .acciones-celda { display: flex; gap: .4rem; }
 td.texto { white-space: normal; min-width: 140px; }
+
+/* Barra de filtros */
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .8rem;
+  align-items: flex-end;         /* alinea todo por la base */
+  justify-content: flex-start;   /* alineados a la izquierda */
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 1rem;
+  padding: .9rem 1rem;
+  background: #fff;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+}
+.filtros .grupo {
+  display: flex;
+  flex-direction: column;        /* label arriba, select abajo */
+  gap: .3rem;
+  margin: 0;
+}
+.filtros label {
+  margin: 0;
+  font-weight: normal;
+  font-size: .8rem;
+  color: var(--gris);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.filtros select {
+  width: auto;
+  min-width: 150px;
+  height: 38px;                  /* misma altura que el botón */
+  margin: 0;
+}
+.filtros .btn-chico {
+  margin: 0;                     /* quita cualquier margin-left: auto heredado */
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+}
 

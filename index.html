@@ -72,54 +72,55 @@
     <main class="container">
 
       <!-- SOLO RRHH Y ADMINISTRADOR: RESUMEN GENERAL -->
-      <section id="panel-staff" hidden>
-        <h2>Resumen general</h2>
-        <p class="ayuda">Toca una fila para ver el detalle de ese empleado.</p>
-        
-        <div class="table-wrap">
-          <div class="filtros">
-            <div class="filtro-estado">
-              <label for="filtro-estado">Mostrar:</label>
-              <select id="filtro-estado">
-                <option value="activo">Solo activos</option>
-                <option value="suspendido">Suspendidos</option>
-                <option value="renuncio">Renunciados</option>
-                <option value="despedido">Despedidos</option>
-                <option value="todos">Todos</option>
-              </select>
-            </div>
+<section id="panel-staff" hidden>
+  <h2>Resumen general</h2>
+  <p class="ayuda">Toca una fila para ver el detalle de ese empleado.</p>
 
-            <div class="filtro-estado">
-              <label for="filtro-departamento">Departamento:</label>
-              <select id="filtro-departamento">
-                <option value="">Todos</option>
-              </select>
-            </div>
+  <!-- Barra de filtros FUERA de la tarjeta -->
+  <div class="filtros">
+    <div class="grupo">
+      <label for="filtro-estado">Estado:</label>
+      <select id="filtro-estado">
+        <option value="todos">Todos</option>
+        <option value="activo">Activo</option>
+        <option value="inactivo">Inactivo</option>
+      </select>
+    </div>
 
-            <button id="btn-nuevo-empleado" class="btn-chico btn-prim" type="button">+ Nuevo empleado</button>
-          </div>
+    <div class="grupo">
+      <label for="filtro-departamento">Departamento:</label>
+      <select id="filtro-departamento">
+        <!-- aquí van las opciones dinámicas -->
+      </select>
+    </div>
 
-          <table id="tabla-resumen">
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>Nombre</th>
-                <th>Puesto</th>
-                <th>Departamento</th>
-                <th>Ingreso</th>
-                <th>Salida</th>
-                <th>Estado</th>
-                <th class="num">Acumuladas</th>
-                <th class="num">Disfrutadas</th>
-                <th class="num">Anticipadas</th>
-                <th class="num">Pendiente</th>
-                <th class="num">Disponible</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </section>
+    <button id="btn-nuevo-empleado" class="btn-chico">+ Nuevo empleado</button>
+  </div>
+
+  <!-- La tarjeta blanca solo con la tabla -->
+  <div class="table-wrap">
+    <table id="tabla-resumen">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Nombre</th>
+          <th>Puesto</th>
+          <th>Departamento</th>
+          <th>Ingreso</th>
+          <th>Salida</th>
+          <th>Estado</th>
+          <th class="num">Acumuladas</th>
+          <th class="num">Disfrutadas</th>
+          <th class="num">Anticipadas</th>
+          <th class="num">Pendiente</th>
+          <th class="num">Disponible</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
 
       <!-- SOLO RRHH, GERENTE DE RRHH Y ADMINISTRADOR: REGISTRAR EMPLEADO -->
       <section id="panel-nuevo-empleado" hidden>

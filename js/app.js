@@ -427,13 +427,29 @@
   /**
    * Carga los saldos de vacaciones de todos los empleados
    */
-  async function cargarSaldos() {
-  const respuesta = await db
-    .from('saldos_vacaciones')
-    .select('*')
-    .order('nombre');
+async function cargarSaldos() {
+  const [respSaldos, respEmpleados] = await Promise.all([
+    db.from('saldos_vacaciones').select('*').order('nombre'),
+    db.from('empleados').select('id, puesto, departamento, fecha_ingreso, fecha_salida')
+  ]);
 
-  saldos = respuesta.data || [];
+  saldos = respSaldos.data || [];
+  const empleadosList = respEmpleados.data || [];
+
+  // Mezclar puesto/departamento/fechas en cada saldo, por empleado_id
+  const porId = {};
+  empleadosList.forEach(function (e) { porId[e.id] = e; });
+
+  saldos.forEach(function (s) {
+    const e = porId[s.empleado_id];
+    if (e) {
+      s.puesto = e.puesto;
+      s.departamento = e.departamento;
+      s.fecha_ingreso = e.fecha_ingreso;
+      s.fecha_salida = e.fecha_salida;
+    }
+  });
+
   llenarFiltroDepartamentos();
   dibujarResumen();
  }
@@ -442,19 +458,19 @@
    * Llena el select de departamentos con los valores únicos
    */
   function llenarFiltroDepartamentos() {
-    const select = $('filtro-departamento');
-    if (!select) return;
+  const select = $('filtro-departamento');
+  if (!select) return;
 
-    const seleccionado = select.value;
-    const departamentos = saldos
-      .map(s => s.departamento)
-      .filter(d => !!d);
-    const unicos = [...new Set(departamentos)].sort();
+  const seleccionado = select.value;
+  const departamentos = saldos
+    .map(function (s) { return s.departamento; })
+    .filter(function (d) { return !!d; });
+  const unicos = [...new Set(departamentos)].sort();
 
-    select.innerHTML = '<option value="">Todos</option>' +
-      unicos.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  select.innerHTML = '<option value="">Todos</option>' +
+    unicos.map(function (d) { return `<option value="${esc(d)}">${esc(d)}</option>`; }).join('');
 
-    select.value = unicos.includes(seleccionado) ? seleccionado : '';
+  select.value = unicos.includes(seleccionado) ? seleccionado : '';
   }
 
   // ============ EMPLEADOS (STAFF) ============
@@ -866,58 +882,54 @@
   /**
    * Dibuja la tabla de resumen de empleados
    */
-  function dibujarResumen() {
-    const cuerpo = $('tabla-resumen').querySelector('tbody');
-    const filtroEstado = $('filtro-estado') ? $('filtro-estado').value : 'activo';
-    const filtroDepto = $('filtro-departamento') ? $('filtro-departamento').value : '';
+function dibujarResumen() {
+  const cuerpo = $('tabla-resumen').querySelector('tbody');
+  const filtroEstado = $('filtro-estado') ? $('filtro-estado').value : 'todos';
+  const filtroDepto = $('filtro-departamento') ? $('filtro-departamento').value : '';
 
-    // Filtrar según criterios
-    const lista = saldos.filter(s => {
-      // Filtro de estado
-      if (filtroEstado !== 'todos' && s.estado !== filtroEstado) {
-        return false;
-      }
-
-      // Filtro de departamento
-      if (filtroDepto && s.departamento !== filtroDepto) {
-        return false;
-      }
-
-      return true;
-    });
-
-    if (!lista.length) {
-      cuerpo.innerHTML = '<tr><td colspan="12" class="vacio">Sin empleados con ese filtro.</td></tr>';
-      return;
+  const lista = saldos.filter(function (s) {
+    if (filtroEstado === 'activo' && s.estado !== 'activo') {
+      return false;
     }
+    if (filtroEstado === 'inactivo' && s.estado === 'activo') {
+      return false;
+    }
+    if (filtroDepto && s.departamento !== filtroDepto) {
+      return false;
+    }
+    return true;
+  });
 
-    // Renderizar filas
-    cuerpo.innerHTML = lista.map(s => {
-      return `<tr data-id="${esc(s.empleado_id)}">
-        <td>${esc(s.codigo)}</td>
-        <td>${esc(s.nombre)}</td>
-        <td>${esc(s.puesto || '-')}</td>
-        <td>${esc(s.departamento || '-')}</td>
-        <td>${esc(fecha(s.fecha_ingreso))}</td>
-        <td>${esc(fecha(s.fecha_salida))}</td>
-        <td>${esc(ESTADOS[s.estado] || s.estado)}</td>
-        <td class="num">${esc(num(s.acumuladas))}</td>
-        <td class="num">${esc(num(s.disfrutadas))}</td>
-        <td class="num">${esc(num(s.anticipadas))}</td>
-        <td class="num">${esc(num(s.saldo_pendiente))}</td>
-        <td class="num"><strong>${esc(num(s.saldo_disponible))}</strong></td>
-      </tr>`;
-    }).join('');
-
-    // Añadir evento de click a las filas
-    cuerpo.querySelectorAll('tr[data-id]').forEach(fila => {
-      fila.addEventListener('click', () => {
-        mostrarEmpleado(fila.getAttribute('data-id'));
-      });
-    });
-
-    resaltarFila();
+  if (!lista.length) {
+    cuerpo.innerHTML = '<tr><td colspan="12" class="vacio">Sin empleados con ese filtro.</td></tr>';
+    return;
   }
+
+  cuerpo.innerHTML = lista.map(function (s) {
+    return `<tr data-id="${esc(s.empleado_id)}">
+      <td>${esc(s.codigo)}</td>
+      <td>${esc(s.nombre)}</td>
+      <td>${esc(s.puesto || '-')}</td>
+      <td>${esc(s.departamento || '-')}</td>
+      <td>${esc(fecha(s.fecha_ingreso))}</td>
+      <td>${esc(fecha(s.fecha_salida))}</td>
+      <td>${esc(ESTADOS[s.estado] || s.estado)}</td>
+      <td class="num">${esc(num(s.acumuladas))}</td>
+      <td class="num">${esc(num(s.disfrutadas))}</td>
+      <td class="num">${esc(num(s.anticipadas))}</td>
+      <td class="num">${esc(num(s.saldo_pendiente))}</td>
+      <td class="num"><strong>${esc(num(s.saldo_disponible))}</strong></td>
+    </tr>`;
+  }).join('');
+
+  cuerpo.querySelectorAll('tr[data-id]').forEach(function (fila) {
+    fila.addEventListener('click', function () {
+      mostrarEmpleado(fila.getAttribute('data-id'));
+    });
+  });
+
+  resaltarFila();
+}
 
   /**
    * Resalta la fila del empleado actualmente seleccionado
