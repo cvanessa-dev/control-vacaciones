@@ -19,6 +19,21 @@ Usa HTML, CSS y JavaScript, con Supabase (PostgreSQL) como base de datos.
 ### Solicitudes de vacaciones
 ![Solicitudes](img/captura-solicitudes.png)
 
+## Modelo de base de datos
+
+![Diagrama entidad-relación](img/diagrama-base-datos.png)
+
+Tablas principales:
+
+- `empleados`: datos del personal (código, puesto, departamento, fecha de ingreso, estado).
+- `periodos_vacaciones`: días que corresponden por cada año de servicio.
+- `solicitudes_vacaciones`: solicitudes de días, con estado y respuesta de RRHH.
+- `movimientos_vacaciones`: historial de acumulaciones, disfrutes, anticipos y ajustes.
+- `perfiles`: vincula cada usuario de Supabase Auth con su empleado y su rol.
+- `suspensiones`: periodos en los que el empleado no acumula vacaciones.
+- `reglas_antiguedad`: días por año según la antigüedad.
+- `feriados`: días que no se descuentan al calcular una solicitud.
+
 ## Estructura
 
 - `index.html`: la página
