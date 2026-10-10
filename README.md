@@ -1,7 +1,23 @@
 # Control de vacaciones
 
+> Proyecto de la clase **Implantación de Tecnología**.
+
 Proyecto académico para consultar saldos de vacaciones del personal.
 Usa HTML, CSS y JavaScript, con Supabase (PostgreSQL) como base de datos.
+
+## Capturas
+
+### Inicio de sesión
+![Pantalla de inicio de sesión](img/captura-login.png)
+
+### Resumen general (RRHH)
+![Resumen general](img/captura-resumen-emple.png)
+
+### Resumen general vista empleado
+![Resumen general](img/captura-resumen.png)
+
+### Solicitudes de vacaciones
+![Solicitudes](img/captura-solicitudes.png)
 
 ## Estructura
 
@@ -9,6 +25,7 @@ Usa HTML, CSS y JavaScript, con Supabase (PostgreSQL) como base de datos.
 - `css/styles.css`: los estilos
 - `js/config.js`: la conexión con Supabase (URL y llave publishable)
 - `js/app.js`: la lógica de la página
+- `img/`: imágenes del proyecto
 
 ## Cómo abrirlo
 
