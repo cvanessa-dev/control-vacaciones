@@ -236,5 +236,7 @@ td.texto { white-space: normal; min-width: 140px; }
   display: inline-flex;
   align-items: center;
 }
-
+.card.provisional { border-style: dashed; opacity: .8; }
+.card.provisional .valor { color: var(--gris); }
+.nota-tarjeta { margin-top: .3rem; font-size: .78rem; color: var(--gris); }
 

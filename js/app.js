@@ -532,8 +532,8 @@ async function cargarSaldos() {
     // Actualizar títulos
     $('titulo-empleado').textContent = esPropio ? 'Mis vacaciones' : (saldo ? saldo.nombre : 'Empleado');
     $('subtitulo-empleado').textContent = saldo
-      ? `Código ${saldo.codigo} - Estado: ${ESTADOS[saldo.estado] || saldo.estado}${saldo.puesto ? ` - ${saldo.puesto}` : ''}${saldo.departamento ? ` (${saldo.departamento})` : ''}`
-      : '';
+   ? `Código ${saldo.codigo} - Estado: ${ESTADOS[saldo.estado] || saldo.estado}${saldo.puesto ? ` - ${saldo.puesto}` : ''}${saldo.departamento ? ` (${saldo.departamento})` : ''} | Ingreso: ${fecha(saldo.fecha_ingreso)} | Antigüedad: ${saldo.antiguedad || '-'}`
+   : '';
 
     // Mostrar/ocultar secciones
     $('btn-volver').hidden = esPropio;
@@ -640,6 +640,19 @@ async function cargarSaldos() {
       return;
     }
     if (!(dias > 0)) {
+      const miSaldo = saldos.find(s => s.empleado_id === perfil.empleado_id);
+    if (miSaldo) {
+    const enEdicion = editandoId ? misSolicitudes.find(x => x.id === editandoId) : null;
+    const otras = Number(miSaldo.saldo_pendiente) - (enEdicion ? Number(enEdicion.dias_solicitados) : 0);
+    const libre = Math.max(Number(miSaldo.saldo_disponible) - otras, 0);
+    if (dias > libre) {
+    mensajeSolicitud(
+      `Solo tienes ${num(libre)} días disponibles para solicitar${otras > 0 ? ' (descontando tus solicitudes pendientes)' : ''}. Si necesitas más, habla con RRHH.`,
+      true
+    );
+    return;
+  }
+}
       mensajeSolicitud('Los días deben ser mayores a cero.', true);
       return;
     }
@@ -857,27 +870,44 @@ async function cargarSaldos() {
    * Dibuja las tarjetas de resumen de saldos
    */
   function dibujarTarjetas(s) {
-    const caja = $('tarjetas');
+  const caja = $('tarjetas');
+  const aviso = $('aviso-saldo');
+  aviso.hidden = true;
 
-    if (!s) {
-      caja.innerHTML = '<p class="vacio">No hay datos de saldo para mostrar.</p>';
-      return;
-    }
-
-    const tarjeta = (etiqueta, valor, clase) => {
-      return `<div class="card ${clase || ''}">
-        <div class="etiqueta">${esc(etiqueta)}</div>
-        <div class="valor">${esc(num(valor))}</div>
-      </div>`;
-    };
-
-    caja.innerHTML =
-      tarjeta('Acumuladas', s.acumuladas) +
-      tarjeta('Disfrutadas', s.disfrutadas) +
-      tarjeta('Anticipadas', s.anticipadas) +
-      tarjeta('Saldo pendiente', s.saldo_pendiente, Number(s.saldo_pendiente) > 0 ? 'alerta' : '') +
-      tarjeta('Saldo disponible', s.saldo_disponible, 'destacada');
+  if (!s) {
+    caja.innerHTML = '<p class="vacio">No hay datos de saldo para mostrar.</p>';
+    return;
   }
+
+  const tarjeta = (etiqueta, valor, clase, nota) => `<div class="card ${clase || ''}">
+      <div class="etiqueta">${esc(etiqueta)}</div>
+      <div class="valor">${esc(num(valor))}</div>
+      ${nota ? `<div class="nota-tarjeta">${esc(nota)}</div>` : ''}
+    </div>`;
+
+  const cumplioAnio = Number(s.anios_cumplidos) >= 1;
+
+  caja.innerHTML =
+    tarjeta('Total ganado', s.acumuladas) +
+    tarjeta('Total tomado', s.disfrutadas) +
+    tarjeta('Anticipadas', s.anticipadas) +
+    tarjeta('En solicitudes pendientes', s.saldo_pendiente, Number(s.saldo_pendiente) > 0 ? 'alerta' : '') +
+    tarjeta('Saldo disponible', s.saldo_disponible, 'destacada') +
+    (cumplioAnio
+      ? tarjeta('Proporcional (aún no disponible)', s.proporcional, 'provisional',
+          `Pasa a tu saldo el ${fecha(s.fecha_consolidacion)}`)
+      : '');
+
+  const avisos = [];
+  if (!cumplioAnio) {
+    avisos.push(`Aún no cumples tu primer año. Tendrás derecho a ${num(s.dias_periodo)} días el ${fecha(s.fecha_consolidacion)}.`);
+  }
+  if (s.alerta_tope) {
+    avisos.push(`Tienes más de dos períodos acumulados (tope de ${num(s.tope_dias)} días). Coordina con RRHH para programar tus vacaciones.`);
+  }
+  aviso.textContent = avisos.join(' ');
+  aviso.hidden = avisos.length === 0;
+ }
 
   /**
    * Dibuja la tabla de resumen de empleados
@@ -901,25 +931,26 @@ function dibujarResumen() {
   });
 
   if (!lista.length) {
-    cuerpo.innerHTML = '<tr><td colspan="12" class="vacio">Sin empleados con ese filtro.</td></tr>';
-    return;
+  cuerpo.innerHTML = '<tr><td colspan="13" class="vacio">Sin empleados con ese filtro.</td></tr>';    return;
   }
 
   cuerpo.innerHTML = lista.map(function (s) {
     return `<tr data-id="${esc(s.empleado_id)}">
-      <td>${esc(s.codigo)}</td>
-      <td>${esc(s.nombre)}</td>
-      <td>${esc(s.puesto || '-')}</td>
-      <td>${esc(s.departamento || '-')}</td>
-      <td>${esc(fecha(s.fecha_ingreso))}</td>
-      <td>${esc(fecha(s.fecha_salida))}</td>
-      <td>${esc(ESTADOS[s.estado] || s.estado)}</td>
-      <td class="num">${esc(num(s.acumuladas))}</td>
-      <td class="num">${esc(num(s.disfrutadas))}</td>
-      <td class="num">${esc(num(s.anticipadas))}</td>
-      <td class="num">${esc(num(s.saldo_pendiente))}</td>
-      <td class="num"><strong>${esc(num(s.saldo_disponible))}</strong></td>
-    </tr>`;
+  <td>${esc(s.codigo)}</td>
+  <td>${esc(s.nombre)}</td>
+  <td>${esc(s.puesto || '-')}</td>
+  <td>${esc(s.departamento || '-')}</td>
+  <td>${esc(fecha(s.fecha_ingreso))}</td>
+  <td>${esc(s.antiguedad || '-')}</td>
+  <td>${esc(fecha(s.fecha_salida))}</td>
+  <td>${esc(ESTADOS[s.estado] || s.estado)}</td>
+  <td class="num">${esc(num(s.acumuladas))}</td>
+  <td class="num">${esc(num(s.disfrutadas))}</td>
+  <td class="num">${esc(num(s.anticipadas))}</td>
+  <td class="num">${esc(num(s.saldo_pendiente))}</td>
+  <td class="num"><strong>${esc(num(s.saldo_disponible))}</strong></td>
+  </tr>`;
+
   }).join('');
 
   cuerpo.querySelectorAll('tr[data-id]').forEach(function (fila) {
