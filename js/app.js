@@ -888,14 +888,20 @@ async function cargarSaldos() {
   const cumplioAnio = Number(s.anios_cumplidos) >= 1;
 
   caja.innerHTML =
-    tarjeta('Total ganado', s.acumuladas) +
-    tarjeta('Total tomado', s.disfrutadas) +
-    tarjeta('Anticipadas', s.anticipadas) +
-    tarjeta('En solicitudes pendientes', s.saldo_pendiente, Number(s.saldo_pendiente) > 0 ? 'alerta' : '') +
     tarjeta('Saldo disponible', s.saldo_disponible, 'destacada') +
     (cumplioAnio
-      ? tarjeta('Proporcional (aún no disponible)', s.proporcional, 'provisional',
-          `Pasa a tu saldo el ${fecha(s.fecha_consolidacion)}`)
+      ? tarjeta('Del período actual', s.saldo_periodo_actual, '',
+          `Te corresponden ${num(Number(s.tope_dias) / 2)} días por período`) +
+        tarjeta('De períodos anteriores', s.saldo_anteriores,
+          Number(s.saldo_anteriores) > 0 ? 'alerta' : '', 'Días de años anteriores sin tomar')
+      : '') +
+    tarjeta('En solicitudes pendientes', s.saldo_pendiente, Number(s.saldo_pendiente) > 0 ? 'alerta' : '') +
+    (Number(s.anticipadas) > 0
+      ? tarjeta('Días anticipados', s.anticipadas, '', 'Se descuentan de tus próximos días')
+      : '') +
+    (cumplioAnio
+      ? tarjeta('Proporcional estimado (no disponible)', s.proporcional, 'provisional',
+          `Es un estimado. El ${fecha(s.fecha_consolidacion)} recibes ${num(s.dias_periodo)} días`)
       : '');
 
   const avisos = [];
@@ -944,8 +950,8 @@ function dibujarResumen() {
   <td>${esc(s.antiguedad || '-')}</td>
   <td>${esc(fecha(s.fecha_salida))}</td>
   <td>${esc(ESTADOS[s.estado] || s.estado)}</td>
-  <td class="num">${esc(num(s.acumuladas))}</td>
-  <td class="num">${esc(num(s.disfrutadas))}</td>
+  <td class="num">${esc(num(s.saldo_periodo_actual))}</td>
+  <td class="num">${esc(num(s.saldo_anteriores))}</td>
   <td class="num">${esc(num(s.anticipadas))}</td>
   <td class="num">${esc(num(s.saldo_pendiente))}</td>
   <td class="num"><strong>${esc(num(s.saldo_disponible))}</strong></td>
