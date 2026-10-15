@@ -489,6 +489,7 @@ async function cargarSaldos() {
       departamento: $('emp-departamento').value.trim(),
       fecha_ingreso: $('emp-ingreso').value,
       tipo_pago: $('emp-tipo-pago').value,
+      dias_anteriores_pendientes: Number($('emp-pendientes').value) || 0,
       estado: 'activo'
     };
 
@@ -496,6 +497,10 @@ async function cargarSaldos() {
     if (!datos.codigo || !datos.nombre || !datos.fecha_ingreso) {
       mensajeEmpleado('Código, nombre y fecha de ingreso son obligatorios.', true);
       return;
+     }
+     if (datos.dias_anteriores_pendientes < 0) {
+     mensajeEmpleado('Los días pendientes no pueden ser negativos.', true);
+  return;
     }
 
     const boton = $('emp-guardar');

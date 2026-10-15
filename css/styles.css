@@ -240,3 +240,26 @@ td.texto { white-space: normal; min-width: 140px; }
 .card.provisional .valor { color: var(--gris); }
 .nota-tarjeta { margin-top: .3rem; font-size: .78rem; color: var(--gris); }
 
+/* Formulario de nuevo empleado */
+#form-empleado {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+/* Los botones van en su propia fila, sin desbordarse */
+#form-empleado .acciones-form {
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+}
+
+/* Etiquetas con la misma altura, alineadas abajo */
+#form-empleado label {
+  display: flex;
+  align-items: flex-end;
+  min-height: 2.6em;
+}
+
+/* Campos con la misma altura, incluida la fecha */
+#form-empleado input,
+#form-empleado select {
+  height: 42px;
+}
