@@ -321,6 +321,23 @@
       });
     }
 
+    if ($('btn-ampliar')) {
+  $('btn-ampliar').addEventListener('click', () => ampliarTabla(true));
+ }
+ if ($('btn-cerrar-modal')) {
+  $('btn-cerrar-modal').addEventListener('click', () => ampliarTabla(false));
+ }
+ document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') ampliarTabla(false);
+  }); 
+  
+  if ($('btn-dashboard')) {
+  $('btn-dashboard').addEventListener('click', alternarDashboard);
+ }
+if ($('filtro-dash-estado')) {
+  $('filtro-dash-estado').addEventListener('change', dibujarDashboard);
+ }
+
     // Verificar sesión actual
     db.auth.getSession().then((respuesta) => {
       if (respuesta.data.session) {
@@ -449,9 +466,10 @@ async function cargarSaldos() {
       s.fecha_salida = e.fecha_salida;
     }
   });
-
+  
   llenarFiltroDepartamentos();
   dibujarResumen();
+  if ($('panel-dashboard') && !$('panel-dashboard').hidden) dibujarDashboard();
  }
 
   /**
@@ -568,6 +586,149 @@ async function cargarSaldos() {
     dibujarMovimientos(periodos, movimientos);
   }
 
+  /**
+ * Abre o cierra la tabla de resumen en pantalla completa
+ */
+function ampliarTabla(abrir) {
+  const modal = $('modal-resumen');
+  if (!modal) return;
+  if (!abrir && modal.hidden) return;
+  if (abrir && !modal.hidden) return;
+
+  const ancla = $('anclaje-resumen');
+  const wrap = $('wrap-resumen');
+  const scrollY = window.scrollY;
+
+  if (abrir) {
+    ancla.style.minHeight = ancla.offsetHeight + 'px'; // reserva el espacio
+    $('modal-cuerpo').appendChild(wrap);
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+  } else {
+    ancla.appendChild(wrap);
+    modal.hidden = true;
+    document.body.style.overflow = '';
+    ancla.style.minHeight = '';
+  }
+  window.scrollTo(0, scrollY); // vuelve a la misma posición
+ }
+
+/**
+ * Muestra u oculta el panel de dashboard
+ */
+function alternarDashboard() {
+  const panel = $('panel-dashboard');
+  if (!panel) return;
+
+  const abrir = panel.hidden;
+  panel.hidden = !abrir;
+  $('btn-dashboard').textContent = abrir ? 'Ocultar dashboard' : 'Ver dashboard';
+
+  if (abrir) {
+    dibujarDashboard();
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+/**
+ * Calcula y dibuja los indicadores del dashboard a partir de saldos
+ * Ahora con filtro por estado y lista de alertas
+ */
+function dibujarDashboard() {
+  const cajaKpis = $('dash-kpis');
+  const cajaDepto = $('dash-departamentos');
+  const cajaAlertas = $('dash-alertas');
+  const filtroEstado = $('filtro-dash-estado') ? $('filtro-dash-estado').value : 'activo';
+  
+  if (!cajaKpis || !cajaDepto || !cajaAlertas) return;
+
+  // Filtrar según estado seleccionado
+  const listaFiltrada = saldos.filter(s => {
+    if (filtroEstado === 'activo') return s.estado === 'activo';
+    if (filtroEstado === 'inactivo') return s.estado !== 'activo';
+    return true; // todos
+  });
+
+  // ========== KPIs ==========
+  const total = listaFiltrada.length;
+  const conAlerta = listaFiltrada.filter(s => s.alerta_tope && s.estado === 'activo').length;
+  const diasDisponibles = suma(listaFiltrada, 'saldo_disponible');
+  const diasAnteriores = suma(listaFiltrada, 'saldo_anteriores');
+  const diasPendientes = suma(listaFiltrada, 'saldo_pendiente');
+
+  const kpi = (etiqueta, valor, clase, nota) => `<div class="card ${clase || ''}">
+      <div class="etiqueta">${esc(etiqueta)}</div>
+      <div class="valor">${esc(valor)}</div>
+      ${nota ? `<div class="nota-tarjeta">${esc(nota)}</div>` : ''}
+    </div>`;
+
+  const tituloEstado = filtroEstado === 'todos' ? 'Empleados (todos)' : 
+                       filtroEstado === 'activo' ? 'Empleados activos' : 'Empleados inactivos';
+  
+  cajaKpis.innerHTML =
+    kpi(tituloEstado, num(total), '') +
+    kpi('Días disponibles', num(diasDisponibles), 'destacada') +
+    kpi('Días de años anteriores', num(diasAnteriores),
+        diasAnteriores > 0 ? 'alerta' : '', 'Riesgo de perderse por el tope') +
+    kpi('Con alerta de tope', num(conAlerta),
+        conAlerta > 0 ? 'alerta' : '', 'Activos con más de dos períodos') +
+    kpi('Días pendientes', num(diasPendientes),
+        diasPendientes > 0 ? 'alerta' : '', 'Solicitudes sin resolver');
+
+  // ========== Promedio por departamento ==========
+  const porDepto = {};
+  listaFiltrada.filter(s => s.departamento).forEach(s => {
+    (porDepto[s.departamento] = porDepto[s.departamento] || []).push(s);
+  });
+
+  const filas = Object.keys(porDepto).sort().map(d => ({
+    departamento: d,
+    empleados: porDepto[d].length,
+    promedio: suma(porDepto[d], 'saldo_disponible') / porDepto[d].length
+  }));
+
+  const maxProm = Math.max.apply(null, filas.map(f => f.promedio).concat([1]));
+
+  cajaDepto.innerHTML = filas.length
+    ? filas.map(f => `
+        <div class="dash-fila">
+          <div class="dash-etiqueta">${esc(f.departamento)} <span>(${num(f.empleados)})</span></div>
+          <div class="dash-barra-fondo">
+            <div class="dash-barra" style="width:${(f.promedio / maxProm * 100).toFixed(1)}%"></div>
+          </div>
+          <div class="dash-valor">${num(Math.round(f.promedio * 10) / 10)} días</div>
+        </div>`).join('')
+    : '<p class="vacio">No hay departamentos registrados según el filtro.</p>';
+
+  // ========== Alertas destacadas ==========
+  const empleadosConAlerta = listaFiltrada
+    .filter(s => s.alerta_tope && s.estado === 'activo')
+    .sort((a, b) => b.saldo_anteriores - a.saldo_anteriores) // orden descendente por días anteriores
+  
+  if (empleadosConAlerta.length === 0) {
+    cajaAlertas.innerHTML = '<p class="vacio">No hay empleados con alerta de tope según el filtro.</p>';
+  } else {
+    cajaAlertas.innerHTML = empleadosConAlerta.map(e => `
+      <div class="dash-alerta-card">
+        <div class="dash-alerta-header">
+          <div class="dash-alerta-nombre">${esc(e.codigo)} — ${esc(e.nombre)}</div>
+          <span class="dash-alerta-badge">Tope</span>
+        </div>
+        <div class="dash-alerta-info">
+          ${esc(e.departamento || '-')}${e.puesto ? ' • ' + esc(e.puesto) : ''}
+        </div>
+        <div class="dash-alerta-detalles">
+          <strong>${num(e.saldo_anteriores)}</strong> días de años anteriores<br>
+          <strong>${num(e.saldo_disponible)}</strong> días totales disponibles<br>
+          Período actual: <strong>${num(e.saldo_periodo_actual)}</strong> días<br>
+          Períodos acumulados: <strong>${num(e.anios_cumplidos || 0)}</strong> años<br>
+          <small style="color:var(--amarillo)">Coordina con RRHH para programar vacaciones</small>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
   // ============ SOLICITUDES DEL COLABORADOR ============
 
   /**
@@ -635,7 +796,7 @@ async function cargarSaldos() {
     const dias = Number($('sol-dias').value);
     const nota = $('sol-nota').value.trim();
 
-    // Validaciones
+        // Validaciones
     if (!inicio || !fin) {
       mensajeSolicitud('Elige las dos fechas.', true);
       return;
@@ -645,24 +806,24 @@ async function cargarSaldos() {
       return;
     }
     if (!(dias > 0)) {
-      const miSaldo = saldos.find(s => s.empleado_id === perfil.empleado_id);
-    if (miSaldo) {
-    const enEdicion = editandoId ? misSolicitudes.find(x => x.id === editandoId) : null;
-    const otras = Number(miSaldo.saldo_pendiente) - (enEdicion ? Number(enEdicion.dias_solicitados) : 0);
-    const libre = Math.max(Number(miSaldo.saldo_disponible) - otras, 0);
-    if (dias > libre) {
-    mensajeSolicitud(
-      `Solo tienes ${num(libre)} días disponibles para solicitar${otras > 0 ? ' (descontando tus solicitudes pendientes)' : ''}. Si necesitas más, habla con RRHH.`,
-      true
-    );
-    return;
-  }
-}
       mensajeSolicitud('Los días deben ser mayores a cero.', true);
       return;
     }
 
-    const datos = {
+    const miSaldo = saldos.find(s => s.empleado_id === perfil.empleado_id);
+    if (miSaldo) {
+      const enEdicion = editandoId ? misSolicitudes.find(x => x.id === editandoId) : null;
+      const otras = Number(miSaldo.saldo_pendiente) - (enEdicion ? Number(enEdicion.dias_solicitados) : 0);
+      const libre = Math.max(Number(miSaldo.saldo_disponible) - otras, 0);
+      if (dias > libre) {
+        mensajeSolicitud(
+          `Solo tienes ${num(libre)} días disponibles para solicitar${otras > 0 ? ' (descontando tus solicitudes pendientes)' : ''}. Si necesitas más, habla con RRHH.`,
+          true
+        );
+        return;
+      }
+    }
+     const datos = {
       fecha_inicio: inicio,
       fecha_fin: fin,
       dias_solicitados: dias,
@@ -920,14 +1081,15 @@ async function cargarSaldos() {
   aviso.hidden = avisos.length === 0;
  }
 
-  /**
-   * Dibuja la tabla de resumen de empleados
-   */
+/**
+ * Dibuja la tabla de resumen de empleados
+ */
 function dibujarResumen() {
   const cuerpo = $('tabla-resumen').querySelector('tbody');
   const filtroEstado = $('filtro-estado') ? $('filtro-estado').value : 'todos';
   const filtroDepto = $('filtro-departamento') ? $('filtro-departamento').value : '';
 
+  // Filtrar saldos según estado y departamento seleccionados
   const lista = saldos.filter(function (s) {
     if (filtroEstado === 'activo' && s.estado !== 'activo') {
       return false;
@@ -941,31 +1103,35 @@ function dibujarResumen() {
     return true;
   });
 
+  // Mostrar mensaje si no hay resultados
   if (!lista.length) {
-  cuerpo.innerHTML = '<tr><td colspan="13" class="vacio">Sin empleados con ese filtro.</td></tr>';    return;
+    cuerpo.innerHTML = '<tr><td colspan="13" class="vacio">Sin empleados con ese filtro.</td></tr>';
+    return;
   }
 
+  // Generar filas de la tabla
   cuerpo.innerHTML = lista.map(function (s) {
     return `<tr data-id="${esc(s.empleado_id)}">
-  <td>${esc(s.codigo)}</td>
-  <td>${esc(s.nombre)}</td>
-  <td>${esc(s.puesto || '-')}</td>
-  <td>${esc(s.departamento || '-')}</td>
-  <td>${esc(fecha(s.fecha_ingreso))}</td>
-  <td>${esc(s.antiguedad || '-')}</td>
-  <td>${esc(fecha(s.fecha_salida))}</td>
-  <td>${esc(ESTADOS[s.estado] || s.estado)}</td>
-  <td class="num">${esc(num(s.saldo_periodo_actual))}</td>
-  <td class="num">${esc(num(s.saldo_anteriores))}</td>
-  <td class="num">${esc(num(s.anticipadas))}</td>
-  <td class="num">${esc(num(s.saldo_pendiente))}</td>
-  <td class="num"><strong>${esc(num(s.saldo_disponible))}</strong></td>
-  </tr>`;
-
+      <td>${esc(s.codigo)}</td>
+      <td>${esc(s.nombre)}</td>
+      <td>${esc(s.puesto || '-')}</td>
+      <td>${esc(s.departamento || '-')}</td>
+      <td>${esc(fecha(s.fecha_ingreso))}</td>
+      <td>${esc(s.antiguedad || '-')}</td>
+      <td>${esc(fecha(s.fecha_salida))}</td>
+      <td>${esc(ESTADOS[s.estado] || s.estado)}</td>
+      <td class="num">${esc(num(s.saldo_periodo_actual))}</td>
+      <td class="num">${esc(num(s.saldo_anteriores))}</td>
+      <td class="num">${esc(num(s.anticipadas))}</td>
+      <td class="num">${esc(num(s.saldo_pendiente))}</td>
+      <td class="num"><strong>${esc(num(s.saldo_disponible))}</strong></td>
+    </tr>`;
   }).join('');
 
+  // Asignar evento de click a cada fila (con cierre de modal incluido)
   cuerpo.querySelectorAll('tr[data-id]').forEach(function (fila) {
     fila.addEventListener('click', function () {
+      if (!$('modal-resumen').hidden) return; // modal abierto: ignorar
       mostrarEmpleado(fila.getAttribute('data-id'));
     });
   });

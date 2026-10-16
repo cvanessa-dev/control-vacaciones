@@ -263,3 +263,142 @@ td.texto { white-space: normal; min-width: 140px; }
 #form-empleado select {
   height: 42px;
 }
+/* ===== Tabla de resumen: scroll interno con encabezados fijos ===== */
+#wrap-resumen { max-height: 420px; overflow: auto; }
+#tabla-resumen thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  box-shadow: 0 1px 0 var(--borde);
+}
+
+/* ===== Pantalla ampliada ===== */
+.modal-resumen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  background: var(--fondo);
+}
+.modal-barra {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: .8rem;
+}
+.modal-cuerpo { flex: 1; min-height: 0; }
+.modal-cuerpo #wrap-resumen { height: 100%; max-height: 100%; }
+.modal-cuerpo #tabla-resumen tbody tr { cursor: default; }
+
+/* ===== Filtros del dashboard ===== */
+.filtros-dash {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+.filtro-dash-select {
+  padding: .4rem .6rem;
+  border: 1px solid var(--ambar);
+  border-radius: 8px;
+  font-size: .88rem;
+  background: #fff;
+  color: var(--texto);
+  cursor: pointer;
+}
+.filtro-dash-select:focus {
+  outline: 2px solid var(--azul);
+  outline-offset: 1px;
+}
+
+/* ===== Alertas destacadas ===== */
+.dash-alertas {
+  display: grid;
+  gap: .8rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  margin: 1.2rem 0 0;
+}
+.dash-alerta-card {
+  background: #fff;
+  border: 1px solid var(--amber);
+  border-radius: 8px;
+  padding: .9rem;
+}
+.dash-alerta-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: .5rem;
+}
+.dash-alerta-nombre {
+  font-weight: bold;
+  color: var(--azul);
+  font-size: .92rem;
+}
+.dash-alerta-badge {
+  background: var(--ambar);
+  color: #fff;
+  padding: .15rem .6rem;
+  border-radius: 999px;
+  font-size: .72rem;
+}
+.dash-alerta-info {
+  font-size: .82rem;
+  color: var(--gris);
+  margin-bottom: .4rem;
+}
+.dash-alerta-detalles {
+  font-size: .82rem;
+  line-height: 1.4;
+  color: var(--texto);
+}
+.dash-alerta-detalles strong {
+  color: var(--rojo);
+}
+
+@media (max-width: 600px) {
+  .filtros-dash {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .filtros-dash label {
+    margin-bottom: .2rem;
+  }
+  .filtro-dash-select {
+    width: 100%;
+  }
+  .dash-kpis {
+    grid-template-columns: 1fr;
+  }
+  .dash-alertas {
+    grid-template-columns: 1fr;
+  }
+}
+html { scrollbar-gutter: stable; }
+.dash-kpis {
+  display: grid;
+  gap: .8rem;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  margin: 1rem 0;
+}
+.dash-subtitulo { color: var(--azul); font-size: 1rem; margin: 1.4rem 0 .2rem; }
+.dash-fila {
+  display: grid;
+  grid-template-columns: 200px 1fr 90px;
+  gap: .8rem;
+  align-items: center;
+  margin: .5rem 0;
+}
+.dash-etiqueta { font-size: .88rem; }
+.dash-etiqueta span { color: var(--gris); }
+.dash-barra-fondo { background: var(--azul-claro); border-radius: 999px; height: 14px; overflow: hidden; }
+.dash-barra { background: var(--azul); height: 100%; border-radius: 999px; }
+.dash-valor { text-align: right; font-weight: bold; color: var(--azul); font-size: .88rem; }
+#panel-dashboard { margin-top: 1rem; }
+
+@media (max-width: 600px) {
+  .dash-fila { grid-template-columns: 1fr; gap: .3rem; }
+  .dash-valor { text-align: left; }
+}
