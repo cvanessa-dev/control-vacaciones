@@ -337,6 +337,9 @@
 if ($('filtro-dash-estado')) {
   $('filtro-dash-estado').addEventListener('change', dibujarDashboard);
  }
+ if ($('btn-exportar')) {
+  $('btn-exportar').addEventListener('click', exportarExcel);
+}
 
     // Verificar sesión actual
     db.auth.getSession().then((respuesta) => {
@@ -729,6 +732,145 @@ function dibujarDashboard() {
   }
 }
 
+   //Dibujar Excel
+  async function exportarExcel() {
+  if (!window.ExcelJS) {
+    window.alert('No se pudo cargar la librería de Excel. Revisa tu conexión.');
+    return;
+  }
+
+  const lista = obtenerListaFiltrada();
+  if (!lista.length) {
+    window.alert('No hay empleados para exportar con ese filtro.');
+    return;
+  }
+
+  const estadoTxt = $('filtro-estado').selectedOptions[0].textContent;
+  const deptoTxt = $('filtro-departamento').value || 'Todos';
+  const ahora = new Date();
+  const COLS = 13;
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Control de vacaciones';
+  const ws = wb.addWorksheet('Resumen', {
+    views: [{ state: 'frozen', ySplit: 5 }]
+  });
+
+  // ----- Encabezado del reporte -----
+  ws.mergeCells(1, 1, 1, COLS);
+  ws.getCell('A1').value = 'CONTROL DE VACACIONES — RESUMEN GENERAL';
+  ws.getCell('A1').font = { bold: true, size: 16, color: { argb: 'FF1F3864' } };
+  ws.getRow(1).height = 26;
+
+  ws.mergeCells(2, 1, 2, COLS);
+  ws.getCell('A2').value = `Filtros: Estado = ${estadoTxt} | Departamento = ${deptoTxt}`;
+
+  ws.mergeCells(3, 1, 3, COLS);
+  ws.getCell('A3').value =
+    `Generado el ${ahora.toLocaleDateString('es-HN')} a las ${ahora.toLocaleTimeString('es-HN')} por ${$('user-nombre').textContent}`;
+
+  ws.getCell('A2').font = { size: 10, color: { argb: 'FF5F6B7A' } };
+  ws.getCell('A3').font = { size: 10, color: { argb: 'FF5F6B7A' } };
+
+  // ----- Fila de títulos de columna (fila 5) -----
+  const titulos = ['Código', 'Nombre', 'Puesto', 'Departamento', 'Ingreso', 'Antigüedad',
+                   'Salida', 'Estado', 'Período actual', 'Anteriores', 'Anticipadas',
+                   'Pendiente', 'Disponible'];
+  const anchos = [12, 30, 24, 22, 13, 24, 13, 13, 14, 12, 13, 12, 13];
+
+  const filaTitulos = ws.getRow(5);
+  titulos.forEach((t, i) => {
+    const c = filaTitulos.getCell(i + 1);
+    c.value = t;
+    c.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F3864' } };
+    c.alignment = { vertical: 'middle', horizontal: i >= 8 ? 'right' : 'left', wrapText: true };
+    ws.getColumn(i + 1).width = anchos[i];
+  });
+  filaTitulos.height = 24;
+
+  // ----- Datos -----
+  lista.forEach((s) => {
+    const fila = ws.addRow([
+      s.codigo,
+      s.nombre,
+      s.puesto || '-',
+      s.departamento || '-',
+      fecha(s.fecha_ingreso),
+      s.antiguedad || '-',
+      fecha(s.fecha_salida),
+      ESTADOS[s.estado] || s.estado,
+      Number(s.saldo_periodo_actual || 0),
+      Number(s.saldo_anteriores || 0),
+      Number(s.anticipadas || 0),
+      Number(s.saldo_pendiente || 0),
+      Number(s.saldo_disponible || 0)
+    ]);
+    for (let c = 9; c <= COLS; c++) {
+      fila.getCell(c).numFmt = '0.##';
+      fila.getCell(c).alignment = { horizontal: 'right' };
+    }
+    fila.getCell(COLS).font = { bold: true };
+  });
+
+  // ----- Fila de totales -----
+  const primera = 6;
+  const ultima = 5 + lista.length;
+  const totales = ws.addRow([]);
+  totales.getCell(1).value = 'TOTAL';
+  for (let c = 9; c <= COLS; c++) {
+    const letra = ws.getColumn(c).letter;
+    totales.getCell(c).value = { formula: `SUM(${letra}${primera}:${letra}${ultima})` };
+    totales.getCell(c).numFmt = '0.##';
+    totales.getCell(c).alignment = { horizontal: 'right' };
+  }
+  totales.eachCell({ includeEmpty: true }, (cell, n) => {
+    if (n > COLS) return;
+    cell.font = { bold: true, color: { argb: 'FF1F3864' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8EEF9' } };
+  });
+
+  // ----- Bordes y filas alternadas -----
+  for (let r = 5; r <= totales.number; r++) {
+    for (let c = 1; c <= COLS; c++) {
+      const cell = ws.getCell(r, c);
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFD9DFEA' } },
+        bottom: { style: 'thin', color: { argb: 'FFD9DFEA' } },
+        left: { style: 'thin', color: { argb: 'FFD9DFEA' } },
+        right: { style: 'thin', color: { argb: 'FFD9DFEA' } }
+      };
+      if (r > 5 && r < totales.number && r % 2 === 1) {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F7FB' } };
+      }
+    }
+  }
+
+  // ----- Filtros automáticos y configuración de impresión -----
+  ws.autoFilter = { from: { row: 5, column: 1 }, to: { row: 5, column: COLS } };
+  ws.pageSetup = {
+    orientation: 'landscape',
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    printTitlesRow: '5:5'
+  };
+
+  // ----- Descargar -----
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Resumen_vacaciones_${ahora.toLocaleDateString('en-CA')}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+ }
+ 
   // ============ SOLICITUDES DEL COLABORADOR ============
 
   /**
@@ -1081,27 +1223,25 @@ function dibujarDashboard() {
   aviso.hidden = avisos.length === 0;
  }
 
+ function obtenerListaFiltrada() {
+  const filtroEstado = $('filtro-estado') ? $('filtro-estado').value : 'todos';
+  const filtroDepto = $('filtro-departamento') ? $('filtro-departamento').value : '';
+
+  return saldos.filter(function (s) {
+    if (filtroEstado === 'activo' && s.estado !== 'activo') return false;
+    if (filtroEstado === 'inactivo' && s.estado === 'activo') return false;
+    if (filtroDepto && s.departamento !== filtroDepto) return false;
+    return true;
+  });
+}
 /**
  * Dibuja la tabla de resumen de empleados
  */
 function dibujarResumen() {
   const cuerpo = $('tabla-resumen').querySelector('tbody');
-  const filtroEstado = $('filtro-estado') ? $('filtro-estado').value : 'todos';
-  const filtroDepto = $('filtro-departamento') ? $('filtro-departamento').value : '';
+  const lista = obtenerListaFiltrada();
 
-  // Filtrar saldos según estado y departamento seleccionados
-  const lista = saldos.filter(function (s) {
-    if (filtroEstado === 'activo' && s.estado !== 'activo') {
-      return false;
-    }
-    if (filtroEstado === 'inactivo' && s.estado === 'activo') {
-      return false;
-    }
-    if (filtroDepto && s.departamento !== filtroDepto) {
-      return false;
-    }
-    return true;
-  });
+
 
   // Mostrar mensaje si no hay resultados
   if (!lista.length) {
