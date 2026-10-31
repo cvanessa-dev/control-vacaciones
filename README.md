@@ -11,7 +11,7 @@ Usa HTML, CSS y JavaScript, con Supabase (PostgreSQL) como base de datos.
 ![Pantalla de inicio de sesión](img/captura-login.png)
 
 ### Resumen general (RRHH)
-![Resumen general](img/captura-resumen-emple.png)
+![Resumen general](img/captura-resumen-rh.png)
 
 ### Resumen general vista empleado
 ![Resumen general](img/captura-resumen.png)
