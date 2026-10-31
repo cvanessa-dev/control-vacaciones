@@ -134,6 +134,9 @@ input:focus { outline: 2px solid var(--azul); outline-offset: 1px; }
 .card .valor { font-size: 1.8rem; font-weight: bold; color: var(--azul); }
 .card.destacada { background: var(--azul-claro); border-color: var(--azul); }
 .card.alerta .valor { color: var(--ambar); }
+.cards:not(:has(.card:nth-child(3))) {
+  grid-template-columns: repeat(2, minmax(180px, 320px));
+}
 
 /* TABLAS */
 .table-wrap { overflow-x: auto; background: #fff; border: 1px solid var(--borde); border-radius: 12px; }
@@ -401,4 +404,13 @@ html { scrollbar-gutter: stable; }
 @media (max-width: 600px) {
   .dash-fila { grid-template-columns: 1fr; gap: .3rem; }
   .dash-valor { text-align: left; }
+}
+#aviso-saldo {
+  background: var(--azul-claro);
+  border-left: 4px solid var(--azul);
+  border-radius: 8px;
+  padding: .7rem 1rem;
+  color: var(--texto);
+  font-size: .92rem;
+  max-width: 640px;
 }
